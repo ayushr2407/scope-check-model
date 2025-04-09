@@ -202,18 +202,26 @@
                 console.log('Response status:', res.status);
                 console.log('Response headers:', Object.fromEntries(res.headers.entries()));
                 
-                if (!res.ok) {
-                    // Clone the response to read it multiple times
-                    return res.json().then(errorData => {
-                        console.error('Error response data:', errorData);
-                        throw new Error(`HTTP error! status: ${res.status}, details: ${JSON.stringify(errorData)}`);
+                // First check the content type
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    if (!res.ok) {
+                        return res.json().then(errorData => {
+                            console.error('Error response data:', errorData);
+                            throw new Error(`HTTP error! status: ${res.status}, details: ${JSON.stringify(errorData)}`);
+                        });
+                    }
+                    return res.json();
+                } else {
+                    // If not JSON, get the text and log it
+                    return res.text().then(text => {
+                        console.error('Received non-JSON response:', text);
+                        throw new Error('Expected JSON response but got HTML/text');
                     });
                 }
-                return res.json();
             })
             .then(data => {
                 console.log('Success response data:', data);
-                // Store the result and redirect to scope result page
                 localStorage.setItem("scope_result", JSON.stringify({
                     ...data,
                     name,
@@ -223,7 +231,7 @@
                     answers
                 }));
                 console.log('Data stored in localStorage:', localStorage.getItem("scope_result"));
-                window.location.href = "/scope-result"; // Changed to hyphen instead of underscore
+                window.location.href = "/scope-result";
             })
             .catch(err => {
                 console.error("Full error object:", err);
