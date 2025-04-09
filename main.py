@@ -16,13 +16,7 @@ BASE_URL = os.getenv("BASE_URL", "https://scope-check-model.onrender.com")
 # Update CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        BASE_URL, 
-        "http://localhost:8000",
-        "http://localhost:5500",
-        "http://127.0.0.1:5500",
-        "http://127.0.0.1:8000"
-    ],
+    allow_origins=[BASE_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
