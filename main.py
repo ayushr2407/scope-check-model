@@ -39,6 +39,11 @@ class FinalSubmissionRequest(BaseModel):
     scope: str
     followup_answers: Dict[str, str]
 
+    @app.get("/")
+def read_root():
+    return {"status": "running", "message": "API is live!"}
+
+
 # 🔹 Step 1: Check Scope
 @app.post("/check-scope")
 async def check_scope(request_data: ScopeCheckRequest):
