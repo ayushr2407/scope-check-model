@@ -7,4 +7,6 @@ python-dotenv
 google-generativeai
 langchain-google-genai
 sentence-transformers
+langchain-community
+
 
