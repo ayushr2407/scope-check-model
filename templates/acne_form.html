@@ -156,6 +156,8 @@
     </form>
 
     <script>
+        const BASE_URL = window.location.origin;
+        
         function submitForm() {
             const form = document.getElementById('acneForm');
             const formData = new FormData(form);
@@ -180,19 +182,27 @@
                 answers
             };
     
-            fetch("/check-scope", {
+            fetch(`${BASE_URL}/check-scope`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify(payload)
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 localStorage.setItem("scope_result", JSON.stringify({ ...data, name, gender, dob, condition, answers }));
-                window.location.href = "/scope_result";
+                window.location.href = `${BASE_URL}/scope_result`;
             })
-            .catch(err => alert("Error: " + err));
+            .catch(err => {
+                console.error("Error:", err);
+                alert("Error: " + err.message);
+            });
         }
     </script>    
 </body>

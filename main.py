@@ -1,22 +1,28 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import Dict
 from scope_checker import assess_scope, generate_followup_questions, generate_soap_and_treatment
+import os
 
 app = FastAPI()
 
-templates = Jinja2Templates(directory="templates")
+# Get the base URL from environment variable or default to local
+BASE_URL = os.getenv("BASE_URL", "https://scope-check-model.onrender.com")
 
-# CORS setup for frontend requests
+# Update CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[BASE_URL, "http://localhost:8000"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+templates = Jinja2Templates(directory="templates")
+templates.env.globals["BASE_URL"] = BASE_URL
 
 # ✅ Root route for health check
 @app.get("/")
@@ -36,6 +42,10 @@ def assessment(request: Request):
 def scope_result(request: Request):
     return templates.TemplateResponse("scope_result.html", {"request": request})
 
+# Add health check endpoint
+@app.get("/health")
+async def health_check():
+    return JSONResponse({"status": "healthy", "environment": os.getenv("ENV", "production")})
 
 # ✅ Pydantic Models
 class ScopeCheckRequest(BaseModel):
