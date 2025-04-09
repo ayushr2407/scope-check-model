@@ -7,15 +7,22 @@ import time
 
 # Google Generative AI SDK for generate_content
 import google.generativeai as genai
-genai.configure(api_key="AIzaSyCnPSEGivtGVUDzDDZQKh9gT4Z1tkNRCVM")
+
+# Load API key from environment variable
+genai_api_key = os.getenv("GOOGLE_API_KEY")
+
+genai.configure(api_key=genai_api_key)
 genai_model = genai.GenerativeModel("models/gemini-2.0-flash")
 
 # LangChain wrapper for Gemini 1.5
 from langchain_google_genai import ChatGoogleGenerativeAI
+
 llm = ChatGoogleGenerativeAI(
     model="gemini-1.5-flash",
-    google_api_key="AIzaSyCnPSEGivtGVUDzDDZQKh9gT4Z1tkNRCVM"
+    google_api_key=genai_api_key
 )
+
+#api-AIzaSyCnPSEGivtGVUDzDDZQKh9gT4Z1tkNRCVM
 
 # Vector & document tools
 from langchain_community.embeddings import HuggingFaceEmbeddings
