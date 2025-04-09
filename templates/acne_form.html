@@ -190,7 +190,7 @@
             .then(res => res.json())
             .then(data => {
                 localStorage.setItem("scope_result", JSON.stringify({ ...data, name, gender, dob, condition, answers }));
-                window.location.href = "scope_result.html";
+                window.location.href = "/scope_result";
             })
             .catch(err => alert("Error: " + err));
         }

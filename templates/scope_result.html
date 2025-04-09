@@ -92,7 +92,7 @@
       .then(data => {
         localStorage.setItem("assessment_questions", JSON.stringify(data.questions));
         localStorage.setItem("patient_context", JSON.stringify(payload));
-        window.location.href = "assessment.html";
+        window.location.href = "/assessment";
       })
       .catch(err => {
         loader.style.display = "none";
