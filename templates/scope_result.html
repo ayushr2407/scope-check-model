@@ -63,41 +63,50 @@
   </div>
 
   <script>
+    // On page load, display the scope result
     const scopeData = JSON.parse(localStorage.getItem("scope_result"));
 
     if (scopeData) {
-      document.getElementById("scopeText").innerText = `Scope: ${scopeData.scope}`;
-      document.getElementById("reasonText").innerText = `Reason: ${scopeData.reason}`;
+        document.getElementById("scopeText").innerText = `Scope: ${scopeData.scope}`;
+        document.getElementById("reasonText").innerText = `Reason: ${scopeData.reason}`;
     }
 
     function startAssessment() {
-      const loader = document.getElementById("loader");
-      loader.style.display = "block";
+        const loader = document.getElementById("loader");
+        loader.style.display = "block";
 
-      const payload = {
-        name: scopeData.name,
-        gender: scopeData.gender,
-        dob: scopeData.dob,
-        condition: scopeData.condition,
-        answers: scopeData.answers,
-        scope: scopeData.scope
-      };
+        const payload = {
+            name: scopeData.name,
+            gender: scopeData.gender,
+            dob: scopeData.dob,
+            condition: scopeData.condition,
+            answers: scopeData.answers,
+            scope: scopeData.scope
+        };
 
-      fetch("https://scope-check-model.onrender.com/start-assessment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
-      .then(res => res.json())
-      .then(data => {
-        localStorage.setItem("assessment_questions", JSON.stringify(data.questions));
-        localStorage.setItem("patient_context", JSON.stringify(payload));
-        window.location.href = "/assessment";
-      })
-      .catch(err => {
-        loader.style.display = "none";
-        alert("Failed to start assessment: " + err);
-      });
+        // Make the start-assessment request
+        fetch("/start-assessment", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json" 
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+        })
+        .then(data => {
+            localStorage.setItem("assessment_questions", JSON.stringify(data.questions));
+            localStorage.setItem("patient_context", JSON.stringify(payload));
+            window.location.href = "/assessment";
+        })
+        .catch(err => {
+            loader.style.display = "none";
+            alert("Failed to start assessment: " + err.message);
+        });
     }
   </script>
 </body>

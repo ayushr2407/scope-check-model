@@ -156,24 +156,22 @@
     </form>
 
     <script>
-        const BASE_URL = window.location.origin;
-        
         function submitForm() {
             const form = document.getElementById('acneForm');
             const formData = new FormData(form);
-    
+
             const name = formData.get("name");
             const gender = formData.get("gender");
             const dob = formData.get("dob");
             const condition = formData.get("condition");
-    
+
             const answers = {};
             for (const [key, value] of formData.entries()) {
                 if (!["name", "gender", "dob", "condition"].includes(key)) {
                     answers[key] = value;
                 }
             }
-    
+
             const payload = {
                 name,
                 gender,
@@ -181,8 +179,9 @@
                 condition,
                 answers
             };
-    
-            fetch(`${BASE_URL}/check-scope`, {
+
+            // First, make the check-scope request
+            fetch("/check-scope", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -196,12 +195,20 @@
                 return res.json();
             })
             .then(data => {
-                localStorage.setItem("scope_result", JSON.stringify({ ...data, name, gender, dob, condition, answers }));
-                window.location.href = `${BASE_URL}/scope_result`;
+                // Store the result and redirect to scope result page
+                localStorage.setItem("scope_result", JSON.stringify({
+                    ...data,
+                    name,
+                    gender,
+                    dob,
+                    condition,
+                    answers
+                }));
+                window.location.href = "/scope_result";
             })
             .catch(err => {
                 console.error("Error:", err);
-                alert("Error: " + err.message);
+                alert("Error checking scope: " + err.message);
             });
         }
     </script>    
