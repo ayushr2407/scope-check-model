@@ -189,7 +189,7 @@
             console.log('Sending payload:', JSON.stringify(payload, null, 2));
 
             // Update the fetch URL to match your FastAPI server port (usually 8000)
-            fetch("http://localhost:8000/check-scope", {  // Changed port to 8000
+            fetch("/check-scope", {  // Changed port to 8000
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -236,7 +236,7 @@
                 localStorage.setItem("scope_result", JSON.stringify(storageData));
                 
                 // Update the redirect URL to match your FastAPI server port
-                window.location.href = "http://localhost:8000/scope-result";
+                window.location.href = "/scope-result";
             })
             .catch(err => {
                 console.error("Error details:", {
