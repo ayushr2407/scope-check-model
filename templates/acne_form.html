@@ -47,7 +47,7 @@
     </style>
 </head>
 <body>
-    <h1>Mild Acne Scope Assessment</h1>
+    <h1>Mild Acne asdf Scope Assessment</h1>
     <form id="acneForm">
         <label>Name:
             <input type="text" name="name" required>
@@ -180,6 +180,16 @@
                 answers
             };
 
+            // Debug logs
+            console.log('Form Data:', {
+                name,
+                gender,
+                dob,
+                condition,
+                answers
+            });
+            console.log('Payload being sent:', payload);
+
             // First, make the check-scope request
             fetch("/check-scope", {
                 method: "POST",
@@ -189,12 +199,20 @@
                 body: JSON.stringify(payload)
             })
             .then(res => {
+                console.log('Response status:', res.status);
+                console.log('Response headers:', Object.fromEntries(res.headers.entries()));
+                
                 if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
+                    // Clone the response to read it multiple times
+                    return res.json().then(errorData => {
+                        console.error('Error response data:', errorData);
+                        throw new Error(`HTTP error! status: ${res.status}, details: ${JSON.stringify(errorData)}`);
+                    });
                 }
                 return res.json();
             })
             .then(data => {
+                console.log('Success response data:', data);
                 // Store the result and redirect to scope result page
                 localStorage.setItem("scope_result", JSON.stringify({
                     ...data,
@@ -204,10 +222,12 @@
                     condition,
                     answers
                 }));
-                window.location.href = "/scope_result";
+                console.log('Data stored in localStorage:', localStorage.getItem("scope_result"));
+                window.location.href = "/scope-result"; // Changed to hyphen instead of underscore
             })
             .catch(err => {
-                console.error("Error:", err);
+                console.error("Full error object:", err);
+                console.error("Error stack:", err.stack);
                 alert("Error checking scope: " + err.message);
             });
         }

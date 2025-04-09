@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing import Dict
 from scope_checker import assess_scope, generate_followup_questions, generate_soap_and_treatment
 import os
+from fastapi import HTTPException
 
 app = FastAPI()
 
@@ -75,14 +76,20 @@ class FinalSubmissionRequest(BaseModel):
 # ✅ Step 1: Check Scope
 @app.post("/check-scope")
 async def check_scope(request_data: ScopeCheckRequest):
-    result = assess_scope(
-        name=request_data.name,
-        gender=request_data.gender,
-        dob=request_data.dob,
-        condition=request_data.condition,
-        answers=request_data.answers
-    )
-    return result
+    print("Received request data:", request_data)  # Debug log
+    try:
+        result = assess_scope(
+            name=request_data.name,
+            gender=request_data.gender,
+            dob=request_data.dob,
+            condition=request_data.condition,
+            answers=request_data.answers
+        )
+        print("Assessment result:", result)  # Debug log
+        return result
+    except Exception as e:
+        print("Error in check_scope:", str(e))  # Debug log
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ✅ Step 2: Start Assessment
 @app.post("/start-assessment")
