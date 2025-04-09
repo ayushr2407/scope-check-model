@@ -16,7 +16,13 @@ BASE_URL = os.getenv("BASE_URL", "https://scope-check-model.onrender.com")
 # Update CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[BASE_URL, "http://localhost:8000"],
+    allow_origins=[
+        BASE_URL, 
+        "http://localhost:8000",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://127.0.0.1:8000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,7 +82,7 @@ class FinalSubmissionRequest(BaseModel):
 # ✅ Step 1: Check Scope
 @app.post("/check-scope")
 async def check_scope(request_data: ScopeCheckRequest):
-    print("Received request data:", request_data)  # Debug log
+    print("Received request data:", request_data.dict())  # Debug log
     try:
         result = assess_scope(
             name=request_data.name,
@@ -86,10 +92,25 @@ async def check_scope(request_data: ScopeCheckRequest):
             answers=request_data.answers
         )
         print("Assessment result:", result)  # Debug log
-        return result
+        
+        # Ensure we're returning a proper JSON response
+        return JSONResponse(
+            content=result,
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
     except Exception as e:
         print("Error in check_scope:", str(e))  # Debug log
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)},
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
 
 # ✅ Step 2: Start Assessment
 @app.post("/start-assessment")

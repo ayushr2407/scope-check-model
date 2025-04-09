@@ -160,6 +160,12 @@
             const form = document.getElementById('acneForm');
             const formData = new FormData(form);
 
+            // Validate required fields
+            if (!formData.get("name") || !formData.get("gender") || !formData.get("dob")) {
+                alert("Please fill in all required fields");
+                return;
+            }
+
             const name = formData.get("name");
             const gender = formData.get("gender");
             const dob = formData.get("dob");
@@ -180,63 +186,64 @@
                 answers
             };
 
-            // Debug logs
-            console.log('Form Data:', {
-                name,
-                gender,
-                dob,
-                condition,
-                answers
-            });
-            console.log('Payload being sent:', payload);
+            console.log('Sending payload:', JSON.stringify(payload, null, 2));
 
-            // First, make the check-scope request
-            fetch("/check-scope", {
+            // Update the fetch URL to match your FastAPI server port (usually 8000)
+            fetch("http://localhost:8000/check-scope", {  // Changed port to 8000
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
                 },
                 body: JSON.stringify(payload)
             })
-            .then(res => {
-                console.log('Response status:', res.status);
-                console.log('Response headers:', Object.fromEntries(res.headers.entries()));
+            .then(async response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
                 
-                // First check the content type
-                const contentType = res.headers.get("content-type");
-                if (contentType && contentType.indexOf("application/json") !== -1) {
-                    if (!res.ok) {
-                        return res.json().then(errorData => {
-                            console.error('Error response data:', errorData);
-                            throw new Error(`HTTP error! status: ${res.status}, details: ${JSON.stringify(errorData)}`);
-                        });
+                const text = await response.text();
+                console.log('Raw response:', text);
+
+                if (!text) {
+                    throw new Error('Empty response from server');
+                }
+
+                try {
+                    const data = JSON.parse(text);
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${data.error || 'Unknown error'}`);
                     }
-                    return res.json();
-                } else {
-                    // If not JSON, get the text and log it
-                    return res.text().then(text => {
-                        console.error('Received non-JSON response:', text);
-                        throw new Error('Expected JSON response but got HTML/text');
-                    });
+                    return data;
+                } catch (e) {
+                    console.error('Failed to parse JSON:', text);
+                    throw new Error(`Invalid JSON response: ${e.message}`);
                 }
             })
             .then(data => {
-                console.log('Success response data:', data);
-                localStorage.setItem("scope_result", JSON.stringify({
+                console.log('Success response:', data);
+                
+                // Store in localStorage
+                const storageData = {
                     ...data,
                     name,
                     gender,
                     dob,
                     condition,
                     answers
-                }));
-                console.log('Data stored in localStorage:', localStorage.getItem("scope_result"));
-                window.location.href = "/scope-result";
+                };
+                
+                console.log('Storing data in localStorage:', storageData);
+                localStorage.setItem("scope_result", JSON.stringify(storageData));
+                
+                // Update the redirect URL to match your FastAPI server port
+                window.location.href = "http://localhost:8000/scope-result";
             })
             .catch(err => {
-                console.error("Full error object:", err);
-                console.error("Error stack:", err.stack);
-                alert("Error checking scope: " + err.message);
+                console.error("Error details:", {
+                    message: err.message,
+                    stack: err.stack
+                });
+                alert(`Submission failed: ${err.message}\nPlease check the console for more details.`);
             });
         }
     </script>    

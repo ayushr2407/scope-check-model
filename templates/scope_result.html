@@ -20,24 +20,54 @@
     }
     h1 {
       color: #333;
+      margin-bottom: 30px;
     }
-    p {
+    .scope-result {
+      background-color: #e3f2fd;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border: 2px solid #bbdefb;
+      text-align: left;
+    }
+    .scope-status {
+      font-size: 1.3em;
+      font-weight: bold;
+      color: #0d47a1;
+      margin-bottom: 15px;
+    }
+    .scope-reason {
       font-size: 1.1em;
+      color: #333;
+      line-height: 1.4;
+    }
+    .time-taken {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 10px;
+    }
+    .error-text {
+      color: #721c24;
+      background-color: #f8d7da;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+      text-align: left;
     }
     button {
       margin-top: 20px;
-      padding: 12px 25px;
+      padding: 12px 30px;
       background-color: #007bff;
       color: white;
-      font-size: 1em;
+      font-size: 1.1em;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      transition: background-color 0.3s ease;
     }
     button:hover {
       background-color: #0056b3;
     }
-
     #loader {
       display: none;
       margin-top: 20px;
@@ -45,7 +75,6 @@
       color: #555;
       animation: blink 1s infinite;
     }
-
     @keyframes blink {
       0% { opacity: 1; }
       50% { opacity: 0.5; }
@@ -56,80 +85,129 @@
 <body>
   <div class="container">
     <h1>Scope Check Result</h1>
-    <p id="scopeText"></p>
-    <p id="reasonText"></p>
-    <button onclick="startAssessment()">Start Assessment</button>
+    <div id="resultContent">
+      <!-- Results will be inserted here -->
+    </div>
     <div id="loader">Loading assessment...</div>
   </div>
 
   <script>
-    // On page load, display the scope result
-    const scopeData = JSON.parse(localStorage.getItem("scope_result"));
+    document.addEventListener('DOMContentLoaded', function() {
+      displayResults();
+    });
 
-    if (scopeData) {
-        document.getElementById("scopeText").innerText = `Scope: ${scopeData.scope}`;
-        document.getElementById("reasonText").innerText = `Reason: ${scopeData.reason}`;
+    function displayResults() {
+      const resultContent = document.getElementById("resultContent");
+      
+      try {
+        const scopeData = JSON.parse(localStorage.getItem("scope_result"));
+        console.log("Loaded scope data:", scopeData);
+
+        if (!scopeData) {
+          resultContent.innerHTML = `
+            <div class="error-text">
+              <strong>No assessment data found</strong><br>
+              Please complete the assessment form first.
+              <br><br>
+              <button onclick="window.location.href='/acne-form'">Return to Assessment Form</button>
+            </div>`;
+          return;
+        }
+
+        // Display the results
+        let resultHtml = `
+          <div class="scope-result">
+            <div class="scope-status">
+              Scope Status: ${scopeData.scope}
+            </div>
+            <div class="scope-reason">
+              ${scopeData.reason}
+            </div>`;
+
+        if (scopeData.time_taken) {
+          resultHtml += `
+            <div class="time-taken">
+              Time taken: ${scopeData.time_taken}
+            </div>`;
+        }
+
+        resultHtml += `</div>`;
+
+        // Add the Start Assessment button regardless of scope
+        resultHtml += `
+          <button onclick="startAssessment()">Start Assessment</button>`;
+
+        resultContent.innerHTML = resultHtml;
+
+      } catch (error) {
+        console.error("Error displaying results:", error);
+        resultContent.innerHTML = `
+          <div class="error-text">
+            <strong>Error displaying results</strong><br>
+            ${error.message}
+            <br><br>
+            <button onclick="window.location.href='/acne-form'">Return to Assessment Form</button>
+          </div>`;
+      }
     }
 
     function startAssessment() {
-        const loader = document.getElementById("loader");
-        loader.style.display = "block";
+      const loader = document.getElementById("loader");
+      loader.style.display = "block";
 
-        // Create payload matching AssessmentRequest model from main.py
-        const assessmentPayload = {
-            name: scopeData.name,
-            gender: scopeData.gender,
-            dob: scopeData.dob,
-            condition: scopeData.condition,
-            answers: scopeData.answers,
-            scope: scopeData.scope
-        };
+      const scopeData = JSON.parse(localStorage.getItem("scope_result"));
+      
+      if (!scopeData) {
+        alert("No assessment data found. Please complete the assessment form first.");
+        window.location.href = "/acne-form";
+        return;
+      }
 
-        console.log('Sending assessment request with payload:', assessmentPayload);
+      const assessmentPayload = {
+        name: scopeData.name,
+        gender: scopeData.gender,
+        dob: scopeData.dob,
+        condition: scopeData.condition,
+        answers: scopeData.answers,
+        scope: scopeData.scope
+      };
 
-        // Make the start-assessment request
-        fetch("/start-assessment", {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json" 
-            },
-            body: JSON.stringify(assessmentPayload)
-        })
-        .then(res => {
-            console.log('Response status:', res.status);
-            console.log('Response headers:', Object.fromEntries(res.headers.entries()));
-            
-            if (!res.ok) {
-                return res.json().then(errorData => {
-                    console.error('Error response data:', errorData);
-                    throw new Error(`HTTP error! status: ${res.status}, details: ${JSON.stringify(errorData)}`);
-                });
-            }
-            return res.json();
-        })
-        .then(data => {
-            console.log('Received assessment data:', data);
-            
-            // Store both the questions and the context for the final submission
-            localStorage.setItem("assessment_questions", JSON.stringify(data.questions));
-            localStorage.setItem("assessment_context", JSON.stringify({
-                name: scopeData.name,
-                gender: scopeData.gender,
-                dob: scopeData.dob,
-                condition: scopeData.condition,
-                answers: scopeData.answers,
-                scope: scopeData.scope
-            }));
+      console.log('Sending assessment request with payload:', assessmentPayload);
 
-            // Redirect to assessment page
-            window.location.href = "/assessment";
-        })
-        .catch(err => {
-            console.error("Full error object:", err);
-            console.error("Error stack:", err.stack);
-            loader.style.display = "none";
-            alert("Failed to start assessment: " + err.message);
-        });
+      fetch("/start-assessment", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json" 
+        },
+        body: JSON.stringify(assessmentPayload)
+      })
+      .then(res => {
+        console.log('Response status:', res.status);
+        console.log('Response headers:', Object.fromEntries(res.headers.entries()));
+        
+        if (!res.ok) {
+          return res.json().then(errorData => {
+            console.error('Error response data:', errorData);
+            throw new Error(`HTTP error! status: ${res.status}, details: ${JSON.stringify(errorData)}`);
+          });
+        }
+        return res.json();
+      })
+      .then(data => {
+        console.log('Received assessment data:', data);
+        
+        // Store both the questions and the context for the assessment page
+        localStorage.setItem("assessment_questions", JSON.stringify(data.questions));
+        localStorage.setItem("patient_context", JSON.stringify(assessmentPayload));
+
+        // Redirect to assessment page
+        window.location.href = "/assessment";
+      })
+      .catch(err => {
+        console.error("Error:", err);
+        loader.style.display = "none";
+        alert("Failed to start assessment: " + err.message);
+      });
     }
   </script>
 </body>
