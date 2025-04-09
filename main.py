@@ -10,30 +10,13 @@ from fastapi import HTTPException
 
 app = FastAPI()
 
-# Improved environment handling
-ENV = os.getenv("ENV", "development")  # Default to development if not set
-if ENV == "production":
-    BASE_URL = "https://scope-check-model.onrender.com"
-    ALLOWED_ORIGINS = [
-        "https://scope-check-model.onrender.com"
-    ]
-else:
-    BASE_URL = "http://localhost:8000"
-    ALLOWED_ORIGINS = [
-        "http://localhost:8000",
-        "http://localhost:5500",
-        "http://127.0.0.1:8000",
-        "http://127.0.0.1:5500"
-    ]
+# Get the base URL from environment variable or default to local
+BASE_URL = os.getenv("BASE_URL", "https://scope-check-model.onrender.com")
 
-print(f"🚀 Starting server in {ENV} mode")
-print(f"📍 Base URL: {BASE_URL}")
-print(f"🔒 Allowed Origins: {ALLOWED_ORIGINS}")
-
-# Update CORS configuration with proper origins
+# Update CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=[BASE_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,7 +24,6 @@ app.add_middleware(
 
 templates = Jinja2Templates(directory="templates")
 templates.env.globals["BASE_URL"] = BASE_URL
-templates.env.globals["ENV"] = ENV  # Make ENV available in templates
 
 # ✅ Root route for health check
 @app.get("/")
@@ -64,12 +46,7 @@ def scope_result(request: Request):
 # Add health check endpoint
 @app.get("/health")
 async def health_check():
-    return JSONResponse({
-        "status": "healthy",
-        "environment": ENV,
-        "base_url": BASE_URL,
-        "allowed_origins": ALLOWED_ORIGINS
-    })
+    return JSONResponse({"status": "healthy", "environment": os.getenv("ENV", "production")})
 
 # ✅ Pydantic Models
 class ScopeCheckRequest(BaseModel):
