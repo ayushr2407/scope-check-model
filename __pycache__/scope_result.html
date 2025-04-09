@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scope Result</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f8ff;
+      padding: 40px;
+      text-align: center;
+    }
+    .container {
+      background: white;
+      max-width: 600px;
+      margin: auto;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+    h1 {
+      color: #333;
+    }
+    p {
+      font-size: 1.1em;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px 25px;
+      background-color: #007bff;
+      color: white;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #loader {
+      display: none;
+      margin-top: 20px;
+      font-size: 1em;
+      color: #555;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Scope Check Result</h1>
+    <p id="scopeText"></p>
+    <p id="reasonText"></p>
+    <button onclick="startAssessment()">Start Assessment</button>
+    <div id="loader">Loading assessment...</div>
+  </div>
+
+  <script>
+    const scopeData = JSON.parse(localStorage.getItem("scope_result"));
+
+    if (scopeData) {
+      document.getElementById("scopeText").innerText = `Scope: ${scopeData.scope}`;
+      document.getElementById("reasonText").innerText = `Reason: ${scopeData.reason}`;
+    }
+
+    function startAssessment() {
+      const loader = document.getElementById("loader");
+      loader.style.display = "block";
+
+      const payload = {
+        name: scopeData.name,
+        gender: scopeData.gender,
+        dob: scopeData.dob,
+        condition: scopeData.condition,
+        answers: scopeData.answers,
+        scope: scopeData.scope
+      };
+
+      fetch("http://127.0.0.1:8000/start-assessment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        localStorage.setItem("assessment_questions", JSON.stringify(data.questions));
+        localStorage.setItem("patient_context", JSON.stringify(payload));
+        window.location.href = "assessment.html";
+      })
+      .catch(err => {
+        loader.style.display = "none";
+        alert("Failed to start assessment: " + err);
+      });
+    }
+  </script>
+</body>
+</html>

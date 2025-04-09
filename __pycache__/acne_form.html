@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Acne Scope Assessment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            padding: 40px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 15px;
+        }
+        select, input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mild Acne Scope Assessment</h1>
+    <form id="acneForm">
+        <label>Name:
+            <input type="text" name="name" required>
+        </label>
+
+        <label>Gender:
+            <select name="gender" required>
+                <option value="">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+        </label>
+
+        <label>Date of Birth:
+            <input type="date" name="dob" required>
+        </label>
+
+        <label>Appointment Reason:
+            <input type="text" name="condition" value="Mild Acne" readonly>
+        </label>
+
+        <label>How long have you been experiencing acne?
+            <input type="text" name="duration" placeholder="e.g., 2 months, 1 year" required>
+        </label>
+        
+
+        <label>Is the patient under 12 years of age?
+            <select name="age_under_12">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <label>Family history of scarring acne?
+            <select name="family_history_scarring">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <label>Suspected drug-induced acne?
+            <select name="drug_induced">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <label>New onset after age 30?
+            <select name="onset_after_30">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <label>High anxiety or low self-esteem from acne?
+            <select name="psychosocial_impact">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <label>Moderate to severe symptoms?
+            <select name="moderate_severe_symptoms">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <label>Widespread distribution?
+            <select name="widespread_distribution">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <label>Suspicion of rosacea, folliculitis, etc.?
+            <select name="differential_diagnosis">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <label>Signs of hyperandrogenism?
+            <select name="hyperandrogenism_signs">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <label>Systemic symptoms (sudden onset)?
+            <select name="systemic_symptoms">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <label>Typical features of mild acne?
+            <select name="mild_acne_typical">
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </label>
+
+        <button type="button" onclick="submitForm()">Check Scope</button>
+    </form>
+
+    <script>
+        function submitForm() {
+            const form = document.getElementById('acneForm');
+            const formData = new FormData(form);
+    
+            const name = formData.get("name");
+            const gender = formData.get("gender");
+            const dob = formData.get("dob");
+            const condition = formData.get("condition");
+    
+            const answers = {};
+            for (const [key, value] of formData.entries()) {
+                if (!["name", "gender", "dob", "condition"].includes(key)) {
+                    answers[key] = value;
+                }
+            }
+    
+            const payload = {
+                name,
+                gender,
+                dob,
+                condition,
+                answers
+            };
+    
+            fetch("http://127.0.0.1:8000/check-scope", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                localStorage.setItem("scope_result", JSON.stringify({ ...data, name, gender, dob, condition, answers }));
+                window.location.href = "scope_result.html";
+            })
+            .catch(err => alert("Error: " + err));
+        }
+    </script>    
+</body>
+</html>

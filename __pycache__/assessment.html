@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Follow-Up Assessment</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      padding: 40px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .question-block {
+      margin-bottom: 25px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .options {
+      margin-left: 20px;
+    }
+
+    .options label {
+      font-weight: normal;
+    }
+
+    .other-input {
+      display: none;
+      margin-top: 10px;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      background-color: #28a745;
+      color: white;
+      font-size: 1.1em;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    pre {
+      background-color: #f1f1f1;
+      padding: 20px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
+
+    #loader {
+      display: none;
+      margin-top: 20px;
+      font-size: 1em;
+      color: #555;
+      animation: blink 1s infinite;
+      text-align: center;
+    }
+
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Follow-Up Assessment</h1>
+    <form id="assessmentForm"></form>
+    <div id="loader">Generating SOAP Notes...</div>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const questions = JSON.parse(localStorage.getItem("assessment_questions"));
+    const patientContext = JSON.parse(localStorage.getItem("patient_context"));
+
+    const form = document.getElementById("assessmentForm");
+
+    if (questions && Array.isArray(questions.split('\n'))) {
+      questions.split('\n').forEach((q, index) => {
+        if (q.trim()) {
+          const qBlock = document.createElement("div");
+          qBlock.className = "question-block";
+
+          const qLabel = document.createElement("label");
+          qLabel.innerText = `${index + 1}. ${q}`;
+          qBlock.appendChild(qLabel);
+
+          const options = document.createElement("div");
+          options.className = "options";
+
+          ["Yes", "No", "Not Sure", "Prefer not to say"].forEach(opt => {
+            const optLabel = document.createElement("label");
+            const optInput = document.createElement("input");
+            optInput.type = "checkbox";
+            optInput.name = `q${index}`;
+            optInput.value = opt;
+            optLabel.appendChild(optInput);
+            optLabel.append(" " + opt);
+            options.appendChild(optLabel);
+            options.appendChild(document.createElement("br"));
+          });
+
+          const otherLabel = document.createElement("label");
+          const otherCheckbox = document.createElement("input");
+          otherCheckbox.type = "checkbox";
+          otherCheckbox.name = `q${index}`;
+          otherCheckbox.value = "Other";
+          otherCheckbox.className = "other-check";
+
+          otherLabel.appendChild(otherCheckbox);
+          otherLabel.append(" Other");
+          options.appendChild(otherLabel);
+
+          const otherInput = document.createElement("input");
+          otherInput.type = "text";
+          otherInput.placeholder = "Please specify...";
+          otherInput.className = "other-input";
+          otherInput.dataset.question = `q${index}`;
+
+          otherCheckbox.addEventListener("change", function () {
+            otherInput.style.display = this.checked ? "block" : "none";
+          });
+
+          qBlock.appendChild(options);
+          qBlock.appendChild(otherInput);
+          form.appendChild(qBlock);
+        }
+      });
+
+      const submitBtn = document.createElement("button");
+      submitBtn.type = "button";
+      submitBtn.innerText = "Submit Assessment";
+      submitBtn.onclick = submitAssessment;
+      form.appendChild(submitBtn);
+    }
+
+    function submitAssessment() {
+      const loader = document.getElementById("loader");
+      loader.style.display = "block";
+
+      const followup_answers = {};
+
+      const questionBlocks = document.querySelectorAll(".question-block");
+
+      questionBlocks.forEach((block, index) => {
+        const checkboxes = block.querySelectorAll(`input[name="q${index}"]:checked`);
+        const otherText = block.querySelector(`input.other-input`);
+
+        let values = Array.from(checkboxes).map(cb => cb.value);
+        if (values.includes("Other") && otherText && otherText.value.trim()) {
+          values = values.filter(v => v !== "Other");
+          values.push("Other: " + otherText.value.trim());
+        }
+
+        followup_answers[`q${index + 1}`] = values.join(", ");
+      });
+
+      const payload = {
+        ...patientContext,
+        followup_answers
+      };
+
+      fetch("http://127.0.0.1:8000/submit-assessment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        form.style.display = "none";
+        loader.style.display = "none";
+
+        let html = `<h2>SOAP Note</h2><pre>${data.soap_note}</pre>`;
+
+        if (data.treatment) {
+          html += `<h2>Treatment Recommendation</h2><pre>${data.treatment}</pre>`;
+        }
+
+        if (data.referral) {
+          html += `<button onclick="alert('Refer to Doctor')">Refer to Doctor</button>`;
+        }
+
+        document.getElementById("result").innerHTML = html;
+      })
+      .catch(err => {
+        loader.style.display = "none";
+        alert("Submission failed: " + err);
+      });
+    }
+  </script>
+</body>
+</html>
