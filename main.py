@@ -14,6 +14,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Root route for health check
+@app.get("/")
+def read_root():
+    return {"status": "running", "message": "API is live!"}
+
 # Pydantic Models
 class ScopeCheckRequest(BaseModel):
     name: str
@@ -38,11 +43,6 @@ class FinalSubmissionRequest(BaseModel):
     answers: Dict[str, str]
     scope: str
     followup_answers: Dict[str, str]
-
-    @app.get("/")
-def read_root():
-    return {"status": "running", "message": "API is live!"}
-
 
 # 🔹 Step 1: Check Scope
 @app.post("/check-scope")
