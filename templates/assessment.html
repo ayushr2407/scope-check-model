@@ -186,7 +186,7 @@
         followup_answers
       };
 
-      fetch("http://127.0.0.1:8000/submit-assessment", {
+      fetch("https://scope-check-model.onrender.com/submit-assessment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
