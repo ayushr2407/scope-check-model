@@ -191,7 +191,7 @@
         followup_answers: followup_answers
       };
 
-      console.log('Submitting assessment with payload:', payload);
+      console.log('Sending payload:', JSON.stringify(payload, null, 2));
 
       fetch("/submit-assessment", {
         method: "POST",
@@ -200,22 +200,41 @@
         },
         body: JSON.stringify(payload)
       })
-      .then(res => {
-        console.log('Response status:', res.status);
-        if (!res.ok) {
-          return res.json().then(errorData => {
-            console.error('Error response data:', errorData);
-            throw new Error(`HTTP error! status: ${res.status}, details: ${JSON.stringify(errorData)}`);
-          });
+      .then(async response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+        try {
+          const text = await response.text();
+          console.log('Raw response:', text);
+
+          if (text) {
+            const data = JSON.parse(text);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}, details: ${JSON.stringify(data)}`);
+            }
+            return data;
+          } else {
+            throw new Error('Empty response from server');
+          }
+        } catch (e) {
+          console.error('Error parsing response:', e);
+          throw new Error(`Failed to parse server response: ${e.message}`);
         }
-        return res.json();
       })
       .then(data => {
-        console.log('Received response:', data);
+        console.log('Successfully parsed response:', data);
         form.style.display = "none";
         loader.style.display = "none";
 
-        let html = `<h2>SOAP Note</h2><pre>${data.soap_note}</pre>`;
+        if (!data || (!data.soap_note && !data.treatment)) {
+          throw new Error('Invalid response format from server');
+        }
+
+        let html = '';
+        if (data.soap_note) {
+          html += `<h2>SOAP Note</h2><pre>${data.soap_note}</pre>`;
+        }
 
         if (data.treatment) {
           html += `<h2>Treatment Recommendation</h2><pre>${data.treatment}</pre>`;
@@ -228,9 +247,9 @@
         document.getElementById("result").innerHTML = html;
       })
       .catch(err => {
-        console.error("Error:", err);
+        console.error("Error details:", err);
         loader.style.display = "none";
-        alert("Submission failed: " + err.message);
+        alert(`Submission failed: ${err.message}\nPlease check the console for more details.`);
       });
     }
   </script>
