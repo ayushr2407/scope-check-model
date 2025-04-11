@@ -122,6 +122,7 @@ def assess_scope(name: str, gender: str, dob: str, condition: str, answers: dict
         }
 
 def generate_followup_questions(name, gender, dob, condition, answers, scope):
+    print(f"Date of Birth: {dob}")
     case_text = f"Patient Name: {name}\nGender: {gender}\nDOB: {dob}\n" + \
                 "\n".join([f"{k.replace('_', ' ').capitalize()}: {v}" for k, v in answers.items()])
 
@@ -159,14 +160,40 @@ def generate_soap_and_treatment(name, gender, dob, condition, answers, followup_
         age = "unknown"
 
     # Build a structured summary from answers
-    context_lines = "\n".join([
-        f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in answers.items()
-    ])
+    context_lines = "\n".join([f"- {k.replace('_', ' ').capitalize()}: {v}" for k, v in answers.items()])
+    
+    # Retrieve relevant guidelines (this will be added to SOAP prompt)
+    pdf_folder = "guidelines"
+    index_path = "vectorstore/condition_index"
+    vectordb = load_or_build_vectorstore(pdf_folder, index_path)
 
+     # Print statement to confirm that PDFs are being used
+    print(f"[INFO] PDFs are being used from the folder: {pdf_folder}")
+    print(f"[INFO] Vector store loaded from: {index_path}")
+    
+    # Retrieve the relevant guideline content
+    treatment_prompt = (
+        f"Based on the British Columbia Acne Guidelines, generate a clinical summary for SOAP note "
+        f"generation. Focus on mild acne management, treatment recommendations, and steps for referral.\n\n"
+        f"Use the following context for generating the SOAP note:\n{context_lines}"
+    )
+
+    # Query the vector store to retrieve relevant parts of the PDF
+    chain = RetrievalQA.from_chain_type(
+        llm=llm,
+        retriever=vectordb.as_retriever(),
+        return_source_documents=True
+    )
+
+    print("[INFO] Querying the vector store for relevant guideline content...")
+
+    result = chain.invoke({"query": treatment_prompt})
+    guideline_content = result['result']
+    
     # Determine scope label
     scope_label = "eligible for pharmacist management" if scope.lower() == "in scope" else "not eligible for pharmacist management"
 
-    # Compose SOAP prompt
+    # Compose SOAP prompt using guideline content as well
     soap_prompt = f"""
 You are a clinical assistant helping pharmacists generate SOAP notes for minor ailments.
 Write a SOAP note in a structured format (Subjective, Objective, Assessment, Plan)
@@ -182,6 +209,8 @@ Patient Info:
 - Gender: {gender}
 - Condition: {condition}
 {context_lines}
+Guideline context for SOAP note generation:
+{guideline_content}
 ---
 
 Write the note in this structure:
@@ -235,4 +264,3 @@ Write the note in this structure:
         "treatment": treatment,
         "referral": scope.lower() != "in scope"
     }
-
